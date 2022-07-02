@@ -3,13 +3,18 @@ say "👋 Welcome to interactive Ruby on Whales installer 🐳.\n" \
 
 DOCKER_DEV_ROOT = ".dockerdev"
 
+INSTALL_RUBY_VERSION = "3.1.2"
+INSTALL_POSTGRES_VERSION = "14"
+INSTALL_REDIS_VERSION = "6.0"
+INSTALL_NODE_VERSION = "16"
+
 # Prepare variables and utility files
 # Collect the app's metadata
 
 app_name = Rails.application.class.name.partition('::').first.parameterize
 # Load the project's deps and required Ruby version
 
-ruby_version = "3.1.2"
+ruby_version = INSTALL_RUBY_VERSION
 gemspecs = {}
 
 begin
@@ -77,8 +82,7 @@ end
 
 postgres_base_image = "postgres"
 
-DEFAULT_POSTGRES_VERSION = "14"
-postgres_version = DEFAULT_POSTGRES_VERSION
+postgres_version = INSTALL_POSTGRES_VERSION
 
 POSTGRES_ADAPTERS = %w[postgres postgresql postgis]
 
@@ -96,13 +100,11 @@ end
 
 yarn_version = "latest"
 
-DEFAULT_NODE_VERSION = "16"
-node_version = DEFAULT_NODE_VERSION
+node_version = INSTALL_NODE_VERSION
 
 # Redis info
 
-DEFAULT_REDIS_VERSION = "6.0"
-redis_version = DEFAULT_REDIS_VERSION
+redis_version = INSTALL_REDIS_VERSION
 
 # Generate configuration
 file "#{DOCKER_DEV_ROOT}/Dockerfile", ERB.new(
