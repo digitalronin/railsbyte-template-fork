@@ -9,24 +9,16 @@ DOCKER_DEV_ROOT = ".dockerdev"
 app_name = Rails.application.class.name.partition('::').first.parameterize
 # Load the project's deps and required Ruby version
 
-ruby_version = nil
+ruby_version = "3.1.2"
 gemspecs = {}
 
 begin
   if File.file?("Gemfile.lock")
     bundler_parser = Bundler::LockfileParser.new(Bundler.read_file("Gemfile.lock"))
     gemspecs =  Hash[bundler_parser.specs.map { |spec| [spec.name, spec.version] }]
-    maybe_ruby_version = bundler_parser.ruby_version.match(/ruby (\d+\.\d+\.\d+)./i)&.[](1)
   end
 
   begin
-    if maybe_ruby_version
-      ruby_version = ask("Which Ruby version would you like to use? (Press ENTER to use #{maybe_ruby_version})")
-      ruby_version = maybe_ruby_version if ruby_version.empty?
-    else
-      ruby_version = ask("Which Ruby version would you like to use? (For example, 3.1.0)")
-    end
-
     Gem::Version.new(ruby_version)
   rescue ArgumentError
     say "Invalid version. Please, try again"
@@ -41,11 +33,6 @@ CODE
 
 begin
   deps = []
-  loop do
-    dep = ask "Which system package do you want to install? (Press ENTER to continue)"
-    break if dep.empty?
-    deps << dep
-  end
 
   aptfile = File.join(DOCKER_DEV_ROOT, "Aptfile")
   FileUtils.mkdir_p(File.dirname(aptfile))
@@ -78,14 +65,7 @@ begin
     end.dig("development", "adapter")
   end
 
-  selected_database_adapter =
-    if maybe_database_adapter
-      ask "Which database adapter do you use? (Press ENTER to use #{maybe_database_adapter})"
-    else
-      ask "Which database adapter do you use?"
-    end
-
-  selected_database_adapter = maybe_database_adapter if selected_database_adapter.empty?
+  selected_database_adapter = maybe_database_adapter
 
   if supported_adapters.include?(selected_database_adapter)
     database_adapter = selected_database_adapter
@@ -95,17 +75,15 @@ begin
 end
 # Specify PostgreSQL version
 
-postgres_version = nil
 postgres_base_image = "postgres"
 
 DEFAULT_POSTGRES_VERSION = "14"
+postgres_version = DEFAULT_POSTGRES_VERSION
+
 POSTGRES_ADAPTERS = %w[postgres postgresql postgis]
 
 if POSTGRES_ADAPTERS.include?(database_adapter)
   begin
-    selected_postgres_version = ask "Which PostgreSQL version do you want to install? (Press ENTER to use #{DEFAULT_POSTGRES_VERSION})"
-
-    postgres_version = selected_postgres_version.empty? ? DEFAULT_POSTGRES_VERSION : selected_postgres_version
     database_url = "#{database_adapter}://postgres:postgres@postgres:5432"
 
     if database_adapter == "postgis"
@@ -116,36 +94,15 @@ end
 # Node/Yarn configuration
 # TODO: Read Node/Yarn versions from .nvmrc/package.json.
 
-node_version = nil
-yarn_version = nil
+yarn_version = "latest"
 
 DEFAULT_NODE_VERSION = "16"
+node_version = DEFAULT_NODE_VERSION
 
-begin
-  selected_node_version = ask(
-    "Which Node version do you want to install? (Press ENTER to use 16, type 'n/no' to skip installing Node)"
-  )
-
-  unless selected_node_version =~ /^\s*no?\s*$/
-    node_version = selected_node_version.empty? ? DEFAULT_NODE_VERSION : selected_node_version
-
-    yarn_version = ask "Which Yarn version do you want to install? (Press ENTER to install the latest one)"
-    yarn_version = "latest" if yarn_version.empty?
-  end
-end
 # Redis info
 
-redis_version = nil
-
 DEFAULT_REDIS_VERSION = "6.0"
-
-begin
-  if gemspecs.key?("redis")
-    maybe_redis_version = ask "Which Redis version do you want to use? (Press ENTER to use #{DEFAULT_REDIS_VERSION})"
-
-    redis_version = maybe_redis_version.empty? ? DEFAULT_REDIS_VERSION : maybe_redis_version
-  end
-end
+redis_version = DEFAULT_REDIS_VERSION
 
 # Generate configuration
 file "#{DOCKER_DEV_ROOT}/Dockerfile", ERB.new(
